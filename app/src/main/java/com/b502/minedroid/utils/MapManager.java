@@ -106,7 +106,6 @@ public class MapManager {
         txtleftmines = context.findViewById(R.id.txtleftmines);
 
         timeManagementMaster = new TimeManagementMaster(new Handler() {
-            @SuppressLint("HandlerLeak")
             @Override
             public void handleMessage(@NonNull Message msg) {
                 super.handleMessage(msg);
@@ -282,7 +281,7 @@ public class MapManager {
        if (block.getMineCount() == Count) {
            for (int i = x - 1; i <= x + 1; i++) {
                for (int j = y - 1; j <= y + 1; j++) {
-                   if ((i == x && j == y) || x == 0 || y == 0 || x == width + 1 || y == height + 1) {
+                   if ((i == x && j == y) || i == 0 || j == 0 || i == width + 1 || j == height + 1) {
                        continue;
                    }
                    if (map[i][j].getButtonState() == MapItem.State.DEFAULT) {

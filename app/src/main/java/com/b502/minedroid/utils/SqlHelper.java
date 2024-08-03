@@ -1,6 +1,5 @@
 package com.b502.minedroid.utils;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -28,7 +27,7 @@ public class SqlHelper extends SQLiteOpenHelper {
 
     public static String getCurrentDate() {
         Calendar calendar = Calendar.getInstance();
-        @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new SimpleDateFormat("MM-dd hh:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd hh:mm:ss");
         return sdf.format(calendar.getTime());
     }
 

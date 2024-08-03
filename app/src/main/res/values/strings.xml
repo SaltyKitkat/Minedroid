@@ -1,7 +1,8 @@
 <resources>
     <string name="app_name">Minedroid</string>
     <string name="title_activity_toplist">ToplistActivity</string>
-    <string name="tab_text_1">初级</string>
-    <string name="tab_text_2">中级</string>
-    <string name="tab_text_3">高级</string>
+    <string name="tab_text_easy">初级</string>
+    <string name="tab_text_mid">中级</string>
+    <string name="tab_text_hard">高级</string>
+    <string name="tab_text_rank">排行榜</string>
 </resources>

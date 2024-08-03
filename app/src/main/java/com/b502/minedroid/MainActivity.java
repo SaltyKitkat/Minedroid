@@ -11,20 +11,15 @@ import com.b502.minedroid.utils.MapManager;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-    private Button btneasy;
-    private Button btnmiddle;
-    private Button btnhard;
-    private Button btnrecord;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        btneasy = findViewById(R.id.btneasy);
-        btnmiddle = findViewById(R.id.btnmiddle);
-        btnhard = findViewById(R.id.btnhard);
-        btnrecord = findViewById(R.id.btnrecord);
+        Button btneasy = findViewById(R.id.btneasy);
+        Button btnmiddle = findViewById(R.id.btnmiddle);
+        Button btnhard = findViewById(R.id.btnhard);
+        Button btnrecord = findViewById(R.id.btnrecord);
 
 
         btneasy.setOnClickListener(this);

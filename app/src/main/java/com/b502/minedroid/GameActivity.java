@@ -14,7 +14,6 @@ import com.b502.minedroid.utils.MapManager;
 
 public class GameActivity extends AppCompatActivity implements View.OnClickListener {
 
-    private AppCompatButton btnSmile;
     private MapManager mapManager;
     MapManager.GameDifficulty dif;
 
@@ -25,7 +24,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
 
         Intent i = getIntent();
         dif = MapManager.GameDifficulty.values()[i.getIntExtra("diff", 0)];
-        btnSmile = findViewById(R.id.btnsmile);
+        AppCompatButton btnSmile = findViewById(R.id.btnsmile);
         btnSmile.setOnClickListener(this);
         mapManager = new MapManager(this, dif);
     }

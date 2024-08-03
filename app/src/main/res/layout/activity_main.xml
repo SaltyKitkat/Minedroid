@@ -8,26 +8,12 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
-<!--    <LinearLayout-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="50dp"-->
-<!--        android:background="@color/colorPrimary">-->
-
-<!--        <TextView-->
-<!--            android:id="@+id/titMain"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_gravity="center"-->
-<!--            android:text="   Minedroid"-->
-<!--            android:textColor="#ffffff"-->
-<!--            android:textSize="25dp" />-->
-<!--    </LinearLayout>-->
-
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="50dp"
+        android:contentDescription="@string/app_name"
         android:src="@mipmap/sweeper">
 
     </ImageView>
@@ -37,8 +23,8 @@
         android:layout_height="wrap_content"
         android:gravity="center"
 
-        android:text="Minedroid"
-        android:textSize="40dp" />
+        android:text="@string/app_name"
+        android:textSize="40sp" />
 
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -58,13 +44,13 @@
             android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:background="#fafafa"
-            android:text="初级难度"
+            android:text="@string/tab_text_easy"
             android:textColor="#5dac81"
-            android:textSize="25dp"
+            android:textSize="25sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"></Button>
+            app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -77,13 +63,13 @@
             android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:background="#fafafa"
-            android:text="中级难度"
+            android:text="@string/tab_text_mid"
             android:textColor="#40cfb3"
-            android:textSize="25dp"
+            android:textSize="25sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"></Button>
+            app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -96,14 +82,14 @@
             android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:background="#fafafa"
-            android:text="高级难度"
+            android:text="@string/tab_text_hard"
             android:textColor="#367386"
-            android:textSize="25dp"
+            android:textSize="25sp"
 
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"></Button>
+            app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -117,12 +103,12 @@
             android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:background="#fafafa"
-            android:text="排行榜"
-            android:textSize="25dp"
+            android:text="@string/tab_text_rank"
+            android:textSize="25sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"></Button>
+            app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

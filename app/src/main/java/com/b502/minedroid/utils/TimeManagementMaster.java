@@ -29,7 +29,7 @@ public class TimeManagementMaster {
         hangedup = false;
         if(t!=null){
             try {
-                t.join();;
+                t.join();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

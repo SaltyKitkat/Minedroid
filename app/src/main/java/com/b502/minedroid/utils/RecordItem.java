@@ -1,5 +1,7 @@
 package com.b502.minedroid.utils;
 
+import androidx.annotation.NonNull;
+
 public class RecordItem {
     String date;
     int costtime;
@@ -14,6 +16,7 @@ public class RecordItem {
 
     }
 
+    @NonNull
     @Override
     public String toString() {
         String time;
