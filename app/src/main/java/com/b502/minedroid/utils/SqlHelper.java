@@ -5,6 +5,8 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -31,7 +33,7 @@ public class SqlHelper extends SQLiteOpenHelper {
         return sdf.format(calendar.getTime());
     }
 
-    public void addRecord(MapManager.GameDifficulty difficulty, String recordtime, int costtime) {
+    public void addRecord(@NotNull MapManager.GameDifficulty difficulty, String recordtime, int costtime) {
 
         SQLiteDatabase db = getWritableDatabase();
         String sqlval = String.format(" (recordtime,costtime) VALUES ('%s',%s)", recordtime, costtime);
