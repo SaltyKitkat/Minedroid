@@ -1,6 +1,5 @@
 package com.b502.minedroid.utils;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.Handler;
 import android.os.Message;
@@ -21,7 +20,9 @@ import com.b502.minedroid.R;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
+import java.util.function.Function;
 
 public class MapManager {
     public enum GameDifficulty {
@@ -48,26 +49,23 @@ public class MapManager {
     GameDifficulty difficulty;
 
     Activity context;
-    private TextView txtTime;
-    private Button btnsmile;
-    private TextView txtleftmines;
+    private final TextView txtTime;
+    private final Button btnsmile;
+    private final TextView txtleftmines;
     int gametime;
 
     TimeManagementMaster timeManagementMaster;
 
+    // should never be used on edge items
+    private int countAround(int x, int y, Function<MapItem, Boolean> f0) {
+        Function<MapItem, Integer> f = f0.andThen((b) -> b ? 1 : 0);
+        return f.apply(map[x - 1][y + 1]) + f.apply(map[x][y + 1]) + f.apply(map[x + 1][y + 1]) + f.apply(map[x - 1][y]) + f.apply(map[x + 1][y]) + f.apply(map[x - 1][y - 1]) + f.apply(map[x][y - 1]) + f.apply(map[x + 1][y - 1]);
+    }
+
     //calculate minecount upon click -- try to avoid a long latency when generating map
-    int getMineCountAt(int x, int y) {
+    private int getMineCountAt(int x, int y) {
         if (map[x][y].getMineCount() == 9) {
-            map[x][y].setMineCount(
-                    b2i(map[x - 1][y + 1].isMine()) +
-                            b2i(map[x][y + 1].isMine()) +
-                            b2i(map[x + 1][y + 1].isMine()) +
-                            b2i(map[x - 1][y].isMine()) +
-                            b2i(map[x + 1][y].isMine()) +
-                            b2i(map[x - 1][y - 1].isMine()) +
-                            b2i(map[x][y - 1].isMine()) +
-                            b2i(map[x + 1][y - 1].isMine())
-            );
+            map[x][y].setMineCount(countAround(x, y, MapItem::isMine));
         }
         return map[x][y].getMineCount();
     }
@@ -110,7 +108,7 @@ public class MapManager {
             public void handleMessage(@NonNull Message msg) {
                 super.handleMessage(msg);
                 gametime++;
-                txtTime.setText(String.format("%02d:%02d", (gametime / 60), (gametime % 60)));
+                txtTime.setText(String.format(Locale.ENGLISH, "%02d:%02d", (gametime / 60), (gametime % 60)));
             }
         }, 10);
 
@@ -120,10 +118,6 @@ public class MapManager {
         generateButtons();
         // generateMap(); // initmap is what actually wanted here.
         initMap();
-    }
-
-    public static int b2i(boolean val) {
-        return val ? 1 : 0;
     }
 
     private int getPixelsFromDp(int size) {
@@ -137,26 +131,24 @@ public class MapManager {
     }
 
     //init the map, to make it looks good.
-    void initMap(){
+    // blocks outside the map should be opened
+    private void initMap() {
         for (int i = 0; i <= width + 1; i++) {
             for (int j = 0; j <= height + 1; j++) {
                 map[i][j].setMine(false);
+                map[i][j].setButtonState(MapItem.State.OPENED);
+                map[i][j].setMineCount(0);
+            }
+        }
+        for (int i = 1; i <= width; i++) {
+            for (int j = 1; j <= height; j++) {
                 map[i][j].setButtonState(MapItem.State.DEFAULT);
                 map[i][j].setMineCount(9);              //an impossible value to mark that it has not been calculated yet
             }
         }
     }
 
-    void generateMap(int mask_x,int mask_y) {// mask_x,mask_y is the location where player clicked, so we should avoild to put mine there
-
-        // map init code, maybe should be move into another function: initMap
-//        for (int i = 0; i <= width + 1; i++) {
-//            for (int j = 0; j <= height + 1; j++) {
-//                map[i][j].setMine(false);
-//                map[i][j].setButtonState(MapItem.State.DEFAULT);
-//                map[i][j].setMineCount(9);              //an impossible value to mark that it is not calculated yet
-//            }
-//        }
+    void generateMap(int mask_x, int mask_y) {// mask_x,mask_y is the location where player clicked, so we should avoild to put mine there
         //生成地雷编号
         int tot = width * height;
         List<Integer> numlist = new ArrayList<>();
@@ -172,7 +164,6 @@ public class MapManager {
                 i--;
                 continue;
             }
-            // map[(ind % width) + 1][(ind / width) + 1].setMine(true);
             map[x][y].setMine(true);
         }
 
@@ -238,21 +229,14 @@ public class MapManager {
         if (map[x][y].getButtonState() != MapItem.State.DEFAULT) return;
 
         if (!map[x][y].isMine()) {
-            int minecount = getMineCountAt(x, y);               //make sure use the calculated minecount
+            getMineCountAt(x, y);
             map[x][y].setButtonState(MapItem.State.OPENED);     //set state after calculating minecount and before recursion
+
+            openBlockAround(x, y);
+
             leftblock--;
             if (leftblock == 0) {
                 gameWin();
-            }
-            if (minecount == 0) {
-                extendBlockAt(x, y - 1);
-                extendBlockAt(x, y + 1);
-                extendBlockAt(x - 1, y);
-                extendBlockAt(x + 1, y);
-                extendBlockAt(x - 1, y - 1);
-                extendBlockAt(x + 1, y - 1);
-                extendBlockAt(x - 1, y + 1);
-                extendBlockAt(x + 1, y + 1);
             }
         } else {
             gameLose();
@@ -260,58 +244,38 @@ public class MapManager {
     }
 
     //gaoshiqing
-   void flagBlockAround(int x, int y) {
-       if (x == 0 || y == 0) return;
-       if (x == width + 1 || y == height + 1) return;
+    void flagBlockAround(int x, int y) {
+        if (x == 0 || y == 0) return;
+        if (x == width + 1 || y == height + 1) return;
 
-       MapItem block = map[x][y];
-       int Count = 0;
-       for (int i = x - 1; i <= x + 1; i++) {
-           for (int j = y - 1; j <= y + 1; j++) {
-               if (i == x && j == y) {
-                   continue;
-               }
-               MapItem.State state = map[i][j].getButtonState();
-               if (state == MapItem.State.FLAGED
-                       || state == MapItem.State.DEFAULT) {
-                   Count++;
-               }
-           }
-       }
-       if (block.getMineCount() == Count) {
-           for (int i = x - 1; i <= x + 1; i++) {
-               for (int j = y - 1; j <= y + 1; j++) {
-                   if ((i == x && j == y) || i == 0 || j == 0 || i == width + 1 || j == height + 1) {
-                       continue;
-                   }
-                   if (map[i][j].getButtonState() == MapItem.State.DEFAULT) {
-                       map[i][j].setButtonState(MapItem.State.FLAGED);
-                       leftflag--;
-                   }
-               }
-           }
-       }
-       txtleftmines.setText(Integer.toString(leftflag));
-   }
+        int Count = countAround(x, y, (it) -> {
+            MapItem.State state = it.getButtonState();
+            return state == MapItem.State.FLAGED || state == MapItem.State.DEFAULT;
+        });
+        MapItem block = map[x][y];
+        if (block.getMineCount() == Count) {
+            for (int i = x - 1; i <= x + 1; i++) {
+                for (int j = y - 1; j <= y + 1; j++) {
+                    if (i == x && j == y) {
+                        continue;
+                    }
+                    if (map[i][j].getButtonState() == MapItem.State.DEFAULT) {
+                        map[i][j].setButtonState(MapItem.State.FLAGED);
+                        leftflag--;
+                    }
+                }
+            }
+        }
+        txtleftmines.setText(Integer.toString(leftflag));
+    }
 
     void openBlockAround(int x, int y) {
         if (x == 0 || y == 0) return;
         if (x == width + 1 || y == height + 1) return;
 
-        int flagCount = 0;
+        int mineAround = getMineCountAt(x, y);
 
-        for (int i = x - 1; i <= x + 1; i++) {
-            for (int j = y - 1; j <= y + 1; j++) {
-                if (i == x && j == y) {
-                    continue;
-                }
-                if (map[i][j].getButtonState() == MapItem.State.FLAGED) {
-                    flagCount++;
-                }
-            }
-        }
-
-        if (getMineCountAt(x, y) == flagCount) {
+        if (mineAround == 0 || mineAround == countAround(x, y, (it) -> it.getButtonState() == MapItem.State.FLAGED)) {
             extendBlockAt(x, y - 1);
             extendBlockAt(x, y + 1);
             extendBlockAt(x - 1, y);
@@ -331,58 +295,49 @@ public class MapManager {
             }
         }
 
-        View.OnClickListener tmpOnclickListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+        View.OnClickListener tmpOnclickListener = view -> {
 
-                int[] pos = (int[]) view.getTag();
-                int x = pos[0];
-                int y = pos[1];
-                switch (gameState) {
-                    case WAIT:
-                        // too expensive, droped!
-                        // while (map[x][y].isMine() || getMineCountAt(x, y) != 0)
-                            // generateMap();
-                        generateMap(x,y);
-                        timeManagementMaster.start();
-                        gameState = GameState.PLAYING;
-                    case PLAYING:
-                        switch (map[x][y].getButtonState()) {
-                            case DEFAULT:
-                                extendBlockAt(x, y);
-                                break;
-                            case OPENED:
-                                openBlockAround(x, y);
-                                flagBlockAround(x, y);//gaoshiqing
-                                break;
-                            case FLAGED:
-                                break;
-                        }
-                        break;
-                    case OVER:
-                        break;
-                }
-                //   Toast.makeText(context,Integer.toString(pos[0])+","+Integer.toString(pos[1]),Toast.LENGTH_SHORT ).show();
-            }
-        };
-        View.OnLongClickListener tmpOnLongClickListener = new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View view) {
-                if (gameState == GameState.PLAYING) {
-                    int[] pos = (int[]) view.getTag();
-                    // Toast.makeText(context,Integer.toString(pos[0])+","+Integer.toString(pos[1]),Toast.LENGTH_SHORT ).show();
-                    if (map[pos[0]][pos[1]].getButtonState() == MapItem.State.DEFAULT) {
-                        map[pos[0]][pos[1]].setButtonState(MapItem.State.FLAGED);
-                        leftflag--;
-                        txtleftmines.setText(Integer.toString(leftflag));
-                    } else if (map[pos[0]][pos[1]].getButtonState() == MapItem.State.FLAGED) {
-                        map[pos[0]][pos[1]].setButtonState(MapItem.State.DEFAULT);
-                        leftflag++;
-                        txtleftmines.setText(Integer.toString(leftflag));
+            int[] pos = (int[]) view.getTag();
+            int x = pos[0];
+            int y = pos[1];
+            switch (gameState) {
+                case WAIT:
+                    generateMap(x, y);
+                    timeManagementMaster.start();
+                    gameState = GameState.PLAYING;
+                case PLAYING:
+                    switch (map[x][y].getButtonState()) {
+                        case DEFAULT:
+                            extendBlockAt(x, y);
+                            break;
+                        case OPENED:
+                            openBlockAround(x, y);
+                            flagBlockAround(x, y);//gaoshiqing
+                            break;
+                        case FLAGED:
+                            break;
                     }
-                }
-                return true;
+                    break;
+                case OVER:
+                    break;
             }
+            //   Toast.makeText(context,Integer.toString(pos[0])+","+Integer.toString(pos[1]),Toast.LENGTH_SHORT ).show();
+        };
+        View.OnLongClickListener tmpOnLongClickListener = view -> {
+            if (gameState == GameState.PLAYING) {
+                int[] pos = (int[]) view.getTag();
+                // Toast.makeText(context,Integer.toString(pos[0])+","+Integer.toString(pos[1]),Toast.LENGTH_SHORT ).show();
+                if (map[pos[0]][pos[1]].getButtonState() == MapItem.State.DEFAULT) {
+                    map[pos[0]][pos[1]].setButtonState(MapItem.State.FLAGED);
+                    leftflag--;
+                    txtleftmines.setText(Integer.toString(leftflag));
+                } else if (map[pos[0]][pos[1]].getButtonState() == MapItem.State.FLAGED) {
+                    map[pos[0]][pos[1]].setButtonState(MapItem.State.DEFAULT);
+                    leftflag++;
+                    txtleftmines.setText(Integer.toString(leftflag));
+                }
+            }
+            return true;
         };
 
         LinearLayout parent = context.findViewById(R.id.boxLayout);
