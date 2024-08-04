@@ -9,7 +9,6 @@ import android.widget.ListView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProviders;
 
 import com.b502.minedroid.MyApplication;
 import com.b502.minedroid.R;
