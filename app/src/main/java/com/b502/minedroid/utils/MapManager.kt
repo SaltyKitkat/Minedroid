@@ -208,6 +208,7 @@ class MapManager(private val context: Activity, private val difficulty: GameDiff
             map[x][y].setButtonState(MapItem.State.OPENED) //set state after calculating minecount and before recursion
 
             openBlockAround(x, y)
+            flagBlockAround(x, y)
 
             leftblock--
             if (leftblock == 0) {
@@ -290,7 +291,7 @@ class MapManager(private val context: Activity, private val difficulty: GameDiff
                     generateMap(x, y)
                     timeManagementMaster.start()
                     gameState = GameState.PLAYING
-                    when (map[x][y]!!.getButtonState()) {
+                    when (map[x][y].getButtonState()) {
                         MapItem.State.DEFAULT -> extendBlockAt(x, y)
                         MapItem.State.OPENED -> {
                             openBlockAround(x, y)
@@ -300,12 +301,12 @@ class MapManager(private val context: Activity, private val difficulty: GameDiff
                     }
                 }
 
-                GameState.PLAYING -> when (map[x][y]!!.getButtonState()) {
+                GameState.PLAYING -> when (map[x][y].getButtonState()) {
                     MapItem.State.DEFAULT -> extendBlockAt(x, y)
                     MapItem.State.OPENED -> {
                         openBlockAround(x, y)
                         flagBlockAround(x, y)
-                    }
+                    }   
                     else -> {}
                 }
 
