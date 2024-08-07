@@ -38,9 +38,7 @@ class GameActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (mapManager.timer.isHangedup) {
-            mapManager.timer.start()
-        }
+        mapManager.timer.resume()
     }
 
     override fun onDestroy() {

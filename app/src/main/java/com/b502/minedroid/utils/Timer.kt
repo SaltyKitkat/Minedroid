@@ -1,53 +1,81 @@
 package com.b502.minedroid.utils
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.ZERO
+import kotlin.time.TimeSource.Monotonic.ValueTimeMark
+import kotlin.time.TimeSource.Monotonic.markNow
 
 class Timer(
-    private var handler: () -> Unit, //单位0.1s
-    private var interval: Int
+    private val handler: () -> Unit, private val interval: Duration //单位1ms
 ) {
-    var isHangedup: Boolean = false
-    private var isFinished: Boolean = false
-    private var job: Job? = null
+    private var passedTime = ZERO
+    private var startTime: ValueTimeMark? = null
+    private var ticker = Ticker(interval / 10) { onTick() }
 
     fun pause() {
-        isHangedup = true
+        if (startTime != null) {
+            ticker.stop()
+            val dur = markNow() - startTime!!
+            passedTime = dur + passedTime
+        }
+    }
+
+    fun resume() {
+        if (startTime != null) {
+            ticker.start()
+            startTime = markNow()
+        }
     }
 
     fun stop() {
-        isFinished = true
-        isHangedup = false
-        runBlocking { launch { job?.cancel() } }
+        ticker.stop()
+        passedTime = ZERO
+        startTime = null
     }
 
-    fun start() {   
-        if (isHangedup) {
-            isHangedup = false
-        }
-        isFinished = false
-        job = CoroutineScope(Dispatchers.Main).launch {
-            var ticker = 0
-            while (!isFinished && !isHangedup) {
-                if (ticker >= interval) {
-                    ticker = 0
-                    handler()
-                }
-                delay(100)
-                ticker++
+    fun start() {
+        startTime = markNow()
+        ticker.start()
+    }
+
+    private fun onTick() {
+        if (startTime != null) {
+            val cur = markNow()
+            val diff = cur - startTime!!
+            if (diff >= interval) {
+                startTime = cur
+                passedTime += diff
+                handler()
             }
         }
-        job!!.start()
     }
+
 
     @Throws(Throwable::class)
     protected fun finalize() {
         stop()
+    }
+}
+
+private class Ticker(val interval: Duration, private val onTick: () -> Unit) {
+    private var job: Job? = null
+    private var running = false
+    fun start() {
+        running = true
+        job = MainScope().launch {
+            while (running) {
+                delay(interval)
+                onTick()
+            }
+        }
+    }
+
+    fun stop() {
+        running = false
+        job = null
     }
 }

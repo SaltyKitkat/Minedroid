@@ -10,11 +10,11 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.widget.AppCompatButton
 import com.b502.minedroid.MyApplication
 import com.b502.minedroid.R
 import java.util.Locale
 import java.util.Random
+import kotlin.time.Duration.Companion.seconds
 
 class MapManager(private val context: Activity, private val difficulty: Difficulty) {
     enum class Difficulty {
@@ -27,35 +27,59 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
 
     private val width: Int = mapsize[difficulty.ordinal][0]
     private val height: Int = mapsize[difficulty.ordinal][1]
-    private val buttonwidth: Int
+    private val buttonwidth: Int = if (this.difficulty == Difficulty.EASY) 40 else 25
 
-    private var count: Int
-    private var leftblock: Int
-    private var leftflag: Int
+
+    private var count: Int = minecount[difficulty.ordinal]
+
+    private var leftblock: Int = width * height - count
+    private var leftflag: Int = count
 
     private var state: State = State.WAIT
-    private var map: Array<Array<MapItem>> = Array(50) { Array(50) { MapItem(false) } }
+    private var map: Array<Array<MapItem>> = Array(50) { Array(50) { MapItem(context, false) } }
 
-    private val txtTime: TextView
-    private val btnsmile: Button
-    private val txtleftmines: TextView
-    private var gametime: Int
+    private val txtTime: TextView = context.findViewById(R.id.txtTime)
+    private val btnsmile: Button = context.findViewById(R.id.btnsmile)
+    private val txtleftmines: TextView = context.findViewById(R.id.txtleftmines)
+    private var gametime: Int = 0
 
-    var timer: Timer
+    var timer = Timer(
+        {
+            gametime++
+            txtTime.text = String.format(
+                Locale.ENGLISH, "%02d:%02d", (gametime / 60), (gametime % 60)
+            )
+        }, 1.seconds
+    )
 
+    init {
+        txtTime.text = "00:00"
+        txtleftmines.text = leftflag.toString()
+        btnsmile.text = ":)"
+        generateButtons()
+        // generateMap(); // initmap is what actually wanted here.
+        initMap()
+    }
 
     // should never be used on edge items
     private fun countAround(x: Int, y: Int, filter: (MapItem) -> Boolean): Int {
-        val f = { it: MapItem -> if (filter(it)) 1 else 0 }
-        return f(map[x - 1][y + 1]) + f(map[x][y + 1]) + f(map[x + 1][y + 1]) + f(
-            map[x - 1][y]
-        ) + f(map[x + 1][y]) + f(map[x - 1][y - 1]) + f(map[x][y - 1]) + f(
-            map[x + 1][y - 1]
-        )
+        var ret = 0
+        doAround(x, y, filter) { _ -> ret += 1 }
+        return ret
     }
 
-//    private fun doAround(x: Int, y: Int, filter: Predicate<MapItem>, f: Consumer<MapItem>) {
-//    }
+    private fun doAround(x: Int, y: Int, filter: (MapItem) -> Boolean, f: (MapItem) -> Unit) {
+        for (i in x - 1..x + 1) {
+            for (j in y - 1..y + 1) {
+                if (i == x && j == y) {
+                    continue
+                }
+                if (filter(map[i][j])) {
+                    f(map[i][j])
+                }
+            }
+        }
+    }
 
     //calculate minecount upon click -- try to avoid a long latency when generating map
     private fun getMineCountAt(x: Int, y: Int): Int {
@@ -81,32 +105,6 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
         initMap()
     }
 
-    init {
-        count = minecount[difficulty.ordinal]
-        leftflag = count
-        leftblock = width * height - count
-        buttonwidth = if (this.difficulty == Difficulty.EASY) 40 else 25
-        gametime = 0
-        txtTime = context.findViewById(R.id.txtTime)
-        btnsmile = context.findViewById(R.id.btnsmile)
-        txtleftmines = context.findViewById(R.id.txtleftmines)
-
-        timer = Timer(
-            {
-                gametime++
-                txtTime.text = String.format(
-                    Locale.ENGLISH, "%02d:%02d", (gametime / 60), (gametime % 60)
-                )
-            }, 10
-        )
-
-        txtTime.text = "00:00"
-        txtleftmines.text = leftflag.toString()
-        btnsmile.text = ":)"
-        generateButtons()
-        // generateMap(); // initmap is what actually wanted here.
-        initMap()
-    }
 
     private fun getPixelsFromDp(size: Int): Int {
         val metrics = DisplayMetrics()
@@ -194,7 +192,7 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
         //todo: get score
     }
 
-    private fun extendBlockAt(x: Int, y: Int) {
+    private fun defaultBlockOnClick(x: Int, y: Int) {
         if (x == 0 || y == 0) return
         if (x == width + 1 || y == height + 1) return
         if (map[x][y].buttonState != MapItem.State.DEFAULT) return
@@ -202,10 +200,9 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
         if (!map[x][y].isMine) {
             getMineCountAt(x, y)
             map[x][y].buttonState =
-                (MapItem.State.OPENED) //set state after calculating minecount and before recursion
+                MapItem.State.OPENED //set state after calculating minecount and before recursion
 
-            openBlockAround(x, y)
-            flagBlockAround(x, y)
+            openedBlockOnClick(x, y)
 
             leftblock--
             if (leftblock == 0) {
@@ -216,33 +213,8 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
         }
     }
 
-    //gaoshiqing
-    private fun flagBlockAround(x: Int, y: Int) {
-        if (x == 0 || y == 0) return
-        if (x == width + 1 || y == height + 1) return
 
-        val count = countAround(x, y) { it: MapItem? ->
-            val state = it!!.buttonState
-            state == MapItem.State.FLAGED || state == MapItem.State.DEFAULT
-        }
-        val block = map[x][y]
-        if (block.mineCount == count) {
-            for (i in x - 1..x + 1) {
-                for (j in y - 1..y + 1) {
-                    if (i == x && j == y) {
-                        continue
-                    }
-                    if (map[i][j].buttonState == MapItem.State.DEFAULT) {
-                        map[i][j].buttonState = (MapItem.State.FLAGED)
-                        leftflag--
-                    }
-                }
-            }
-        }
-        txtleftmines.text = leftflag.toString()
-    }
-
-    private fun openBlockAround(x: Int, y: Int) {
+    private fun openedBlockOnClick(x: Int, y: Int) {
         if (x == 0 || y == 0) return
         if (x == width + 1 || y == height + 1) return
 
@@ -253,32 +225,31 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
         val defaultAround = countAround(
             x, y
         ) { it: MapItem -> it.buttonState == MapItem.State.DEFAULT }
+        // flag around
         if (defaultAround != 0 && flagAround + defaultAround == mineAround) {
-            // make around default -> flaged
+            doAround(x, y, { it -> it.buttonState == MapItem.State.DEFAULT }, { it ->
+                it.buttonState = MapItem.State.FLAGED
+                leftflag--
+            })
         }
+        // open around
         if (mineAround == 0 || mineAround == countAround(
                 x, y
             ) { it: MapItem -> it.buttonState == MapItem.State.FLAGED }
         ) {
-            extendBlockAt(x, y - 1)
-            extendBlockAt(x, y + 1)
-            extendBlockAt(x - 1, y)
-            extendBlockAt(x + 1, y)
-            extendBlockAt(x - 1, y - 1)
-            extendBlockAt(x + 1, y - 1)
-            extendBlockAt(x - 1, y + 1)
-            extendBlockAt(x + 1, y + 1)
+            defaultBlockOnClick(x, y - 1)
+            defaultBlockOnClick(x, y + 1)
+            defaultBlockOnClick(x - 1, y)
+            defaultBlockOnClick(x + 1, y)
+            defaultBlockOnClick(x - 1, y - 1)
+            defaultBlockOnClick(x + 1, y - 1)
+            defaultBlockOnClick(x - 1, y + 1)
+            defaultBlockOnClick(x + 1, y + 1)
         }
     }
 
 
     private fun generateButtons() {
-        for (i in 0..width + 1) {
-            for (j in 0..height + 1) {
-                map[i][j] = MapItem(false)
-            }
-        }
-
         val tmpOnclickListener = View.OnClickListener { view: View ->
             val pos = view.tag as IntArray
             val x = pos[0]
@@ -289,24 +260,26 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
                     timer.start()
                     state = State.PLAYING
                     when (map[x][y].buttonState) {
-                        MapItem.State.DEFAULT -> extendBlockAt(x, y)
+                        MapItem.State.DEFAULT -> defaultBlockOnClick(x, y)
+                        else -> Toast.makeText(
+                            context,
+                            "BUG: unreachable code @ not default button state when gamestate::wait",
+                            Toast.LENGTH_LONG
+                        ).show()
+
+                    }
+                }
+
+                State.PLAYING -> {
+                    when (map[x][y].buttonState) {
+                        MapItem.State.DEFAULT -> defaultBlockOnClick(x, y)
                         MapItem.State.OPENED -> {
-                            openBlockAround(x, y)
-                            flagBlockAround(x, y)
+                            openedBlockOnClick(x, y)
                         }
 
                         else -> {}
                     }
-                }
-
-                State.PLAYING -> when (map[x][y].buttonState) {
-                    MapItem.State.DEFAULT -> extendBlockAt(x, y)
-                    MapItem.State.OPENED -> {
-                        openBlockAround(x, y)
-                        flagBlockAround(x, y)
-                    }
-
-                    else -> {}
+                    txtleftmines.text = leftflag.toString()
                 }
 
                 State.OVER -> {}
@@ -315,47 +288,39 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
         val tmpOnLongClickListener = OnLongClickListener { view: View ->
             if (state == State.PLAYING) {
                 val pos = view.tag as IntArray
-                // Toast.makeText(context,Integer.toString(pos[0])+","+Integer.toString(pos[1]),Toast.LENGTH_SHORT ).show();
                 if (map[pos[0]][pos[1]].buttonState == MapItem.State.DEFAULT) {
-                    map[pos[0]][pos[1]].buttonState = (MapItem.State.FLAGED)
+                    map[pos[0]][pos[1]].buttonState = MapItem.State.FLAGED
                     leftflag--
-                    txtleftmines.text = leftflag.toString()
                 } else if (map[pos[0]][pos[1]].buttonState == MapItem.State.FLAGED) {
-                    map[pos[0]][pos[1]].buttonState = (MapItem.State.DEFAULT)
+                    map[pos[0]][pos[1]].buttonState = MapItem.State.DEFAULT
                     leftflag++
-                    txtleftmines.text = leftflag.toString()
                 }
+                txtleftmines.text = leftflag.toString()
             }
             true
         }
 
         val parent = context.findViewById<LinearLayout>(R.id.boxLayout)
         parent.removeAllViews()
+        val ll = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        val lp = LinearLayout.LayoutParams(
+            getPixelsFromDp(buttonwidth - 2), getPixelsFromDp(buttonwidth + 3)
+        )
         for (j in 1..height) {
             val ln = LinearLayout(context)
             ln.orientation = LinearLayout.HORIZONTAL
-
-            val ll = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-
             ll.gravity = Gravity.CENTER
             ln.layoutParams = ll
-
             for (i in 1..width) {
-                val b = AppCompatButton(context)
-                val lp = LinearLayout.LayoutParams(
-                    getPixelsFromDp(buttonwidth - 2), getPixelsFromDp(buttonwidth + 3)
-                )
+                val b = map[i][j].viewButton
                 b.layoutParams = lp
                 b.tag = intArrayOf(i, j)
-
-                b.setOnClickListener(tmpOnclickListener)
-
                 b.isLongClickable = true
+                b.setOnClickListener(tmpOnclickListener)
                 b.setOnLongClickListener(tmpOnLongClickListener)
                 ln.addView(b)
-                map[i][j].viewButton = b
             }
             parent.addView(ln)
         }

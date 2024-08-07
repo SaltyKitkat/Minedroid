@@ -39,10 +39,10 @@ class PlaceholderFragment : Fragment() {
         }
 
         val lst: List<RecordItem> = when (index) {
-            1 -> MyApplication.Companion.Instance!!.sqlHelper!!.getRecords(Difficulty.EASY)
-            2 -> MyApplication.Companion.Instance!!.sqlHelper!!.getRecords(Difficulty.MIDDLE)
-            3 -> MyApplication.Companion.Instance!!.sqlHelper!!.getRecords(Difficulty.HARD)
-            else -> MyApplication.Companion.Instance!!.sqlHelper!!.getRecords(Difficulty.HARD)
+            1 -> MyApplication.Companion.Instance.sqlHelper.getRecords(Difficulty.EASY)
+            2 -> MyApplication.Companion.Instance.sqlHelper.getRecords(Difficulty.MIDDLE)
+            3 -> MyApplication.Companion.Instance.sqlHelper.getRecords(Difficulty.HARD)
+            else -> MyApplication.Companion.Instance.sqlHelper.getRecords(Difficulty.HARD)
         }
         val arrayAdapter = ArrayAdapter(root.context, android.R.layout.simple_list_item_1, lst)
         lstv.adapter = arrayAdapter
