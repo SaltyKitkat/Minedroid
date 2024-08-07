@@ -9,6 +9,7 @@ android {
         compileSdk 34
         versionCode 6
         versionName "0.0.6"
+        signingConfig signingConfigs.debug
     }
 
     buildTypes {
@@ -18,11 +19,24 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.debug
         }
+        debug {
+//            minifyEnabled true
+//            shrinkResources true
+        }
     }
     namespace 'com.b502.minedroid'
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    dependenciesInfo {
+        includeInApk false
+        includeInBundle false
+    }
+    compileSdk 35
 }
 
 dependencies {
@@ -32,8 +46,6 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
     implementation 'androidx.core:core-ktx:1.13.1'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4'
-    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
 }

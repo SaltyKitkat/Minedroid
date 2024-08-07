@@ -10,7 +10,7 @@ import kotlin.time.TimeSource.Monotonic.ValueTimeMark
 import kotlin.time.TimeSource.Monotonic.markNow
 
 class Timer(
-    private val handler: () -> Unit, private val interval: Duration //单位1ms
+    private val handler: (Duration) -> Unit, private val interval: Duration //单位1ms
 ) {
     private var passedTime = ZERO
     private var startTime: ValueTimeMark? = null
@@ -21,6 +21,7 @@ class Timer(
             ticker.stop()
             val dur = markNow() - startTime!!
             passedTime = dur + passedTime
+            handler(passedTime)
         }
     }
 
@@ -28,11 +29,16 @@ class Timer(
         if (startTime != null) {
             ticker.start()
             startTime = markNow()
+            handler(passedTime)
         }
     }
 
     fun stop() {
         ticker.stop()
+        if (startTime != null) {
+            val dur = markNow() - startTime!!
+            handler(dur + passedTime)
+        }
         passedTime = ZERO
         startTime = null
     }
@@ -49,7 +55,7 @@ class Timer(
             if (diff >= interval) {
                 startTime = cur
                 passedTime += diff
-                handler()
+                handler(passedTime)
             }
         }
     }
