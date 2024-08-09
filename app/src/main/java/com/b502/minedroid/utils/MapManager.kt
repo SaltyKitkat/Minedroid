@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.widget.AppCompatButton
 import com.b502.minedroid.MyApplication
 import com.b502.minedroid.R
 import java.util.Locale
@@ -36,7 +37,8 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
     private var leftflag: Int = count
 
     private var state: State = State.WAIT
-    private var map: Array<Array<MapItem>> = Array(50) { Array(50) { MapItem(context, false) } }
+    private var map: Array<Array<MapItem>> =
+        Array(width + 2) { Array(height + 2) { MapItem(context, false) } }
 
     private val txtTime: TextView = context.findViewById(R.id.txtTime)
     private val btnsmile: Button = context.findViewById(R.id.btnsmile)
@@ -114,7 +116,7 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
         return (size * metrics.densityDpi) / DisplayMetrics.DENSITY_DEFAULT
     }
 
-    //init the map, to make it looks good.
+    // init the map, to make it looks good.
     // blocks outside the map should be opened
     private fun initMap() {
         for (i in 0..width + 1) {
@@ -126,7 +128,7 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
         }
         for (i in 1..width) {
             for (j in 1..height) {
-                map[i][j].buttonState = (MapItem.State.DEFAULT)
+                map[i][j].buttonState = MapItem.State.DEFAULT
                 map[i][j].mineCount =
                     9 //an impossible value to mark that it has not been calculated yet
             }
@@ -230,6 +232,11 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
             doAround(x, y, { it -> it.buttonState == MapItem.State.DEFAULT }, { it ->
                 it.buttonState = MapItem.State.FLAGED
                 leftflag--
+                // click numbers around the newly flaged block
+                doAround(it.x!!,
+                    it.y!!,
+                    { aroundFlagged -> aroundFlagged.buttonState == MapItem.State.OPENED && aroundFlagged.mineCount != 0 },
+                    { aroundFlagged -> openedBlockOnClick(aroundFlagged.x!!, aroundFlagged.y!!) })
             })
         }
         // open around
@@ -308,19 +315,23 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
         val lp = LinearLayout.LayoutParams(
             getPixelsFromDp(buttonwidth - 2), getPixelsFromDp(buttonwidth + 3)
         )
+        ll.gravity = Gravity.CENTER
         for (j in 1..height) {
             val ln = LinearLayout(context)
             ln.orientation = LinearLayout.HORIZONTAL
-            ll.gravity = Gravity.CENTER
             ln.layoutParams = ll
             for (i in 1..width) {
-                val b = map[i][j].viewButton
+                val b = AppCompatButton(context)
                 b.layoutParams = lp
                 b.tag = intArrayOf(i, j)
                 b.isLongClickable = true
                 b.setOnClickListener(tmpOnclickListener)
                 b.setOnLongClickListener(tmpOnLongClickListener)
+//                b.text = ""
+//                val tmp = b.compoundDrawablePadding + 15
+//                b.setPadding(tmp, tmp, tmp, tmp)
                 ln.addView(b)
+                map[i][j].viewButton = b
             }
             parent.addView(ln)
         }
