@@ -33,14 +33,17 @@ class Timer(
         }
     }
 
-    fun stop() {
+    fun stop(): Duration {
         ticker.stop()
         if (startTime != null) {
             val dur = markNow() - startTime!!
-            handler(dur + passedTime)
+            val ret = dur + passedTime
+            handler(ret)
+            passedTime = ZERO
+            startTime = null
+            return ret
         }
-        passedTime = ZERO
-        startTime = null
+        return ZERO
     }
 
     fun start() {

@@ -16,6 +16,7 @@ import com.b502.minedroid.R
 import java.util.Locale
 import java.util.Random
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.DurationUnit
 
 class MapManager(private val context: Activity, private val difficulty: Difficulty) {
     enum class Difficulty {
@@ -26,9 +27,9 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
         WAIT, PLAYING, OVER
     }
 
-    private val width: Int = mapsize[difficulty.ordinal][0]
-    private val height: Int = mapsize[difficulty.ordinal][1]
-    private val buttonwidth: Int = if (this.difficulty == Difficulty.EASY) 40 else 25
+    private val width: Int get() = mapsize[difficulty.ordinal][0]
+    private val height: Int get() = mapsize[difficulty.ordinal][1]
+    private val buttonwidth: Int get() = if (this.difficulty == Difficulty.EASY) 40 else 25
 
 
     private var count: Int = minecount[difficulty.ordinal]
@@ -43,13 +44,14 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
     private val txtTime: TextView = context.findViewById(R.id.txtTime)
     private val btnsmile: Button = context.findViewById(R.id.btnsmile)
     private val txtleftmines: TextView = context.findViewById(R.id.txtleftmines)
-    private var gametime: Int = 0
+//    private var gametime: Int = 0
 
     var timer = Timer(
-        {
-            gametime++
+        { dur ->
+//            gametime++
+            val time = dur.toInt(DurationUnit.SECONDS)
             txtTime.text = String.format(
-                Locale.ENGLISH, "%02d:%02d", (gametime / 60), (gametime % 60)
+                Locale.ENGLISH, "%02d:%02d", (time / 60), (time % 60)
             )
         }, 1.seconds
     )
@@ -99,7 +101,6 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
         count = minecount[difficulty.ordinal]
         leftflag = count
         leftblock = width * height - count
-        gametime = 0
         txtTime.text = "00:00"
         txtleftmines.text = leftflag.toString()
         btnsmile.text = ":)"
@@ -161,7 +162,7 @@ class MapManager(private val context: Activity, private val difficulty: Difficul
     }
 
     private fun gameWin() {
-        timer.stop()
+        val gametime = timer.stop()
         for (i in 1..width) {
             for (j in 1..height) {
                 if (map[i][j].buttonState == MapItem.State.DEFAULT) {
